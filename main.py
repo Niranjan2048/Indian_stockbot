@@ -8,7 +8,6 @@ from textbase import bot, Message
 from textbase.models import OpenAI
 from typing import List
 import json
-from flask import Flask, request, jsonify
 
 #key here
 openai.api_key=open('API_KEY123','r').read()
