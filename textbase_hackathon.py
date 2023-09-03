@@ -120,6 +120,19 @@ def get_stock_sentiment(stock_ticker):
         result = {"error": "Error fetching news articles."}
 
     return result
+def sentiment_of_stock(company):
+    stock_ticker = company  # Assuming the user provides a stock ticker as input
+    sentiment_result = get_stock_sentiment(stock_ticker)
+    
+    response = f"Sentiment for {sentiment_result['ticker']}: {sentiment_result['sentiment']}\n"
+    for news in sentiment_result.get('news', []):
+        response += f"Source: {news['source']}\n"
+        response += f"Headline: {news['headline']}\n"
+        response += f"Sentiment: {analyze_sentiment(news['headline'])}\n"
+        response += "-" * 50 + "\n"
+    
+    return response
+    
 functions=[
     
     {
@@ -254,7 +267,6 @@ available_functions = {
     'calculate_EMA':calculate_EMA,
     'calculate_MACD':calculate_MACD,
     'calculate_RSI':calculate_RSI,
-    'plot_stock_price':plot_stock_price,
     'sentiment_of_stock':sentiment_of_stock
 
 }
