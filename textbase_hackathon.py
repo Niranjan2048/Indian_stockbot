@@ -156,7 +156,7 @@ def get_stock_sentiment(stock_ticker):
 
 def financial_advisor(message_history: List[Message], state: dict = None):
    
-        if user_input:
+        if message_history[-1].get('content'):
             response = openai.generate(
                 model='gpt-3.5-turbo-16k',
                 messages=message_history,
@@ -183,21 +183,24 @@ def financial_advisor(message_history: List[Message], state: dict = None):
                 # if function_name=='plot_stock_price':
                 #     return stock_price.png
                 # else:
-                session_state['messages'].append(response_message)
-                session_state['messages'].append({'role':'function',
-                    'name':function_name,'content':function_response})
-                
-                second_response = openai.ChatCompletion.create(
-                    model='gpt-3.5-turbo-16k',
-                    messages=session_state['messages'],
-                    max_tokens=2000,
-                    
-                )
-                second_response = second_response['choices'][0]['message']
-            
-                return jsonify({'response': second_response['content']})
-            else:
-                session_state['messages'].append(response_message)
-                return jsonify({'response': response_message['content']})
-        else:
-            return jsonify({'response': "No user input provided."})
+                response = {
+                    "data": {
+                    "messages": [
+                    {
+                        "data_type": "STRING",
+                        "value": function_response
+                    }
+                ],
+                "state": state
+            },
+            "errors": [
+                {
+                    "message": ""
+                }
+            ]
+        }
+
+        return {
+            "status_code": 200,
+            "response": response
+        }
