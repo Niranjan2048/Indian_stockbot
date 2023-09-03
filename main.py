@@ -11,7 +11,7 @@ import json
 from flask import Flask, request, jsonify
 
 #key here
-openai.api_key=open('API_KEY','r').read()
+openai.api_key=open('API_KEY123','r').read()
 
 def get_stock_price(company):
     company=company+'.NS'
