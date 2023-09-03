@@ -55,3 +55,30 @@ def calculate_RSI(company):
     rs=ema_up/ema_down
     rsi=100-(100/(1+rs))
     return str(rsi.iloc[-1])
+def plot_stock_price(company):
+    company=company+'.NS'
+    dfdata = yf.Ticker(company).history(period='1y')
+    plt.figure(figsize=(12, 6))
+    dfdata['Close'].plot(color='blue', linewidth=2)
+    plt.title(f"Stock Price for {company}")
+    plt.xlabel('Date')
+    plt.ylabel('Price (INR)')
+    plt.grid(True, alpha=0.3)
+
+    # Adding a legend
+    plt.legend([f'{company} Stock Price'])
+
+    # Adding a background color
+    plt.axhspan(0, dfdata['Close'].max(), facecolor='0.95')
+
+    # Adding annotations
+    max_price_date = dfdata['Close'].idxmax()
+    max_price = dfdata['Close'].max()
+    plt.annotate(f'Max Price: {max_price:.2f} INR\nDate: {max_price_date.date()}',
+                 xy=(max_price_date, max_price),
+                 xytext=(max_price_date - pd.DateOffset(months=2), max_price * 0.9),
+                 arrowprops=dict(facecolor='black', arrowstyle='wedge,tail_width=0.7'),
+                 fontsize=10,
+                 color='black')
+
+    plt.tight_layout()
