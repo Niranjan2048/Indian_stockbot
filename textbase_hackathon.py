@@ -8,6 +8,9 @@ import requests
 from textblob import TextBlob
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from textbase import bot, Message
+from textbase.models import OpenAI
+from typing import List
 
 
 openai.api_key=open('API_KEY','r').read()
@@ -150,3 +153,51 @@ def get_stock_sentiment(stock_ticker):
         result = {"error": "Error fetching news articles."}
 
     return result
+
+def financial_advisor(message_history: List[Message], state: dict = None):
+   
+        if user_input:
+            response = openai.generate(
+                model='gpt-3.5-turbo-16k',
+                messages=message_history,
+                message_history=message_history,
+                max_tokens=2000,
+                functions=functions,
+                function_call='auto',
+
+            )
+            
+            response_message = response['choices'][0]['message']
+            # Handle the response as in your original code
+            if response_message.get('function_call'):
+                args_dict={}
+                function_name=response_message['function_call']['name']
+                function_args=json.loads(response_message['function_call']['arguments'])
+                if function_name in ['get_stock_price','calculate_MACD','calculate_RSI','plot_stock_price','stock_info','sentiment_of_stock']:
+                    args_dict={'company':function_args.get('company')}
+                elif function_name in ['calculate_SMA','calculate_EMA']:
+                    args_dict={'company':function_args.get('company'),'window':function_args.get('window')}
+                
+                function_to_call=available_functions[function_name]
+                function_response=function_to_call(**args_dict)
+                # if function_name=='plot_stock_price':
+                #     return stock_price.png
+                # else:
+                session_state['messages'].append(response_message)
+                session_state['messages'].append({'role':'function',
+                    'name':function_name,'content':function_response})
+                
+                second_response = openai.ChatCompletion.create(
+                    model='gpt-3.5-turbo-16k',
+                    messages=session_state['messages'],
+                    max_tokens=2000,
+                    
+                )
+                second_response = second_response['choices'][0]['message']
+            
+                return jsonify({'response': second_response['content']})
+            else:
+                session_state['messages'].append(response_message)
+                return jsonify({'response': response_message['content']})
+        else:
+            return jsonify({'response': "No user input provided."})
