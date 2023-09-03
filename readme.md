@@ -22,7 +22,7 @@ This project implements a Financial Advisor chatbot using the Textbase framework
 
    Replace `"YOUR_OPENAI_API_KEY"` in the `main.py` file with your actual OpenAI API key.
 
-## Running the Streamlit App
+## Running the App
 App can be runned by deploying your own version of textbase delpoyment using your own private api key it 
 
 ## Usage
