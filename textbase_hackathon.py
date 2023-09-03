@@ -82,3 +82,71 @@ def plot_stock_price(company):
                  color='black')
 
     plt.tight_layout()
+    # Save the plot as an image
+    image_path = 'stock_price.png'
+    plt.savefig(image_path)
+    plt.close()
+
+    return image_path
+def get_news_articles(stock_ticker):
+    sources = [
+        ("https://www.moneycontrol.com/news/business/stocks/", "moneycontrol"),
+        ("https://www.bloomberg.com/quote/" + stock_ticker + ":IN", "bloomberg"),
+        ("https://www.reuters.com/finance/stocks/overview/" + stock_ticker, "reuters"),
+        ("https://www.cnbc.com/quotes/" + stock_ticker, "cnbc")
+    ]
+    
+    all_news_data = []
+    
+    for source, source_type in sources:
+        response = requests.get(source)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "html.parser")
+            
+            if source_type == "moneycontrol":
+                articles = soup.find_all("li", class_="clearfix")
+            elif source_type == "bloomberg":
+                articles = soup.find_all("div", class_="story-story-grid-story__3MlKt")
+            elif source_type == "reuters":
+                articles = soup.find_all("div", class_="topStory")
+            elif source_type == "cnbc":
+                articles = soup.find_all("div", class_="QuotePage-summary")
+            
+            for article in articles:
+                text = article.get_text() if source_type == "moneycontrol" else article.find("h1").get_text()
+                all_news_data.append({"source": source_type, "headline": text})
+    
+    return all_news_data
+
+def analyze_sentiment(text):
+    blob = TextBlob(text)
+    sentiment = blob.sentiment.polarity
+    return sentiment
+
+def get_final_sentiment(sentiments):
+    positive_count = sum(1 for sentiment in sentiments if sentiment > 0)
+    negative_count = sum(1 for sentiment in sentiments if sentiment < 0)
+    
+    if positive_count > negative_count:
+        return "Positive"
+    elif negative_count > positive_count:
+        return "Negative"
+    else:
+        return "Neutral"
+def get_stock_sentiment(stock_ticker):
+    news_data = get_news_articles(stock_ticker)
+    
+    if news_data:
+        sentiments = [analyze_sentiment(news["headline"]) for news in news_data]
+        final_sentiment = get_final_sentiment(sentiments)
+        
+        result = {
+            "ticker": stock_ticker,
+            "sentiment": final_sentiment,
+            "news": [{"source": news['source'], "headline": news['headline']} for news in news_data]
+        }
+    else:
+        result = {"error": "Error fetching news articles."}
+
+    return result
