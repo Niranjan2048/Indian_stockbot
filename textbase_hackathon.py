@@ -1,6 +1,4 @@
-import json
 import openai
-import matplotlib.pyplot as plt
 import pandas as pd
 import yfinance as yf
 import requests
