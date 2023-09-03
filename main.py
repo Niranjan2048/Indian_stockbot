@@ -1,5 +1,4 @@
 import openai
-import pandas as pd
 import yfinance as yf
 import requests
 from textblob import TextBlob
@@ -11,18 +10,19 @@ from typing import List
 import json
 from flask import Flask, request, jsonify
 
-
+#key here
 openai.api_key=open('API_KEY','r').read()
 
 def get_stock_price(company):
     company=company+'.NS'
     dfdata = yf.Ticker(company).history(period='1y')
     return str(dfdata['Close'].iloc[-1])
-
+#all functions code which maybe useful by our chatgpt api
 def stock_info(company):
     company=company+'.NS'
     data = yf.Ticker(company).info
     return str(data)
+
 def calculate_SMA(company,window):
     company=company+'.NS'
     df = yf.Ticker(company).history(period='1y')
@@ -44,7 +44,6 @@ def calculate_MACD(company):
     signal = MACD.ewm(span=9,adjust=False).mean()
     MACD_hist = MACD - signal
     return f'{MACD[-1]},{signal[-1]},{MACD_hist[-1]}'
-
 
 def calculate_RSI(company):
     company=company+'.NS'
@@ -88,7 +87,7 @@ def get_news_articles(stock_ticker):
                 all_news_data.append({"source": source_type, "headline": text})
     
     return all_news_data
-
+#specifically for sentiment analysis
 def analyze_sentiment(text):
     blob = TextBlob(text)
     sentiment = blob.sentiment.polarity
@@ -104,6 +103,7 @@ def get_final_sentiment(sentiments):
         return "Negative"
     else:
         return "Neutral"
+
 def get_stock_sentiment(stock_ticker):
     news_data = get_news_articles(stock_ticker)
     
@@ -120,6 +120,7 @@ def get_stock_sentiment(stock_ticker):
         result = {"error": "Error fetching news articles."}
 
     return result
+
 def sentiment_of_stock(company):
     stock_ticker = company  # Assuming the user provides a stock ticker as input
     sentiment_result = get_stock_sentiment(stock_ticker)
@@ -132,7 +133,7 @@ def sentiment_of_stock(company):
         response += "-" * 50 + "\n"
     
     return response
-    
+#list of functions    
 functions=[
     
     {
@@ -270,20 +271,12 @@ available_functions = {
     'sentiment_of_stock':sentiment_of_stock
 
 }
-SYSTEM_PROMPT = """Hey hello this is a finance bot specially designed for indian stock market peeps to help them with their daily trading and investing decisions.
-NOTE: This bot is not a financial advisor and is not responsible for any losses or gains you make in the stock market.
-Please use stock tickers for companies listed on the National Stock Exchange of India (NSE).
-"""
-session_state = {'messages': []}
+
+session_state = {'messages': []}#stores my messages locally
+#code for textbase
 @bot()
 def on_message(message_history: List[Message], state: dict = None):
     print(message_history)
-    # if not state:
-    #     state = {}
-    # if not message_history:
-    #     message_history = []
-    # if not session_state['messages']:
-    #     session_state['messages'].append({'role': 'system', 'content': SYSTEM_PROMPT})
     message = message_history[-1]['content'][0]['value']
     print(message)
     session_state['messages'].append({'role': 'user', 'content': message})
@@ -296,7 +289,6 @@ def on_message(message_history: List[Message], state: dict = None):
 
         )
     response_message = response['choices'][0]['message']
-        # Handle the response as in your original code
     if response_message.get('function_call'):
         args_dict={}
         function_name=response_message['function_call']['name']
