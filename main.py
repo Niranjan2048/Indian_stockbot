@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from textbase import bot, Message
 from textbase.models import OpenAI
 from typing import List
+import json
+from flask import Flask, request, jsonify
 
 
 openai.api_key=open('API_KEY','r').read()
@@ -268,54 +270,75 @@ available_functions = {
     'sentiment_of_stock':sentiment_of_stock
 
 }
+SYSTEM_PROMPT = """Hey hello this is a finance bot specially designed for indian stock market peeps to help them with their daily trading and investing decisions.
+NOTE: This bot is not a financial advisor and is not responsible for any losses or gains you make in the stock market.
+Please use stock tickers for companies listed on the National Stock Exchange of India (NSE).
+"""
+session_state = {'messages': []}
 @bot()
-def financial_advisor(message_history: List[Message], state: dict = None):
-   
-        if message_history[-1].get('content'):
-            response = openai.generate(
-                model='gpt-3.5-turbo-16k',
-                messages=message_history,
-                message_history=message_history,
-                max_tokens=2000,
-                functions=functions,
-                function_call='auto',
+def on_message(message_history: List[Message], state: dict = None):
+    print(message_history)
+    # if not state:
+    #     state = {}
+    # if not message_history:
+    #     message_history = []
+    # if not session_state['messages']:
+    #     session_state['messages'].append({'role': 'system', 'content': SYSTEM_PROMPT})
+    message = message_history[-1]['content'][0]['value']
+    print(message)
+    session_state['messages'].append({'role': 'user', 'content': message})
+    response = openai.ChatCompletion.create(
+            model='gpt-3.5-turbo-16k',
+            messages=session_state['messages'],
+            max_tokens=2000,
+            functions=functions,
+            function_call='auto',
 
-            )
+        )
+    response_message = response['choices'][0]['message']
+        # Handle the response as in your original code
+    if response_message.get('function_call'):
+        args_dict={}
+        function_name=response_message['function_call']['name']
+        function_args=json.loads(response_message['function_call']['arguments'])
+        if function_name in ['get_stock_price','calculate_MACD','calculate_RSI','plot_stock_price','stock_info','sentiment_of_stock']:
+            args_dict={'company':function_args.get('company')}
+        elif function_name in ['calculate_SMA','calculate_EMA']:
+            args_dict={'company':function_args.get('company'),'window':function_args.get('window')}
+        
+        function_to_call=available_functions[function_name]
+        function_response=function_to_call(**args_dict)
+        session_state['messages'].append(response_message)
+        session_state['messages'].append({'role':'function',
+                'name':function_name,'content':function_response})
             
-            response_message = response['choices'][0]['message']
-            # Handle the response as in your original code
-            if response_message.get('function_call'):
-                args_dict={}
-                function_name=response_message['function_call']['name']
-                function_args=json.loads(response_message['function_call']['arguments'])
-                if function_name in ['get_stock_price','calculate_MACD','calculate_RSI','plot_stock_price','stock_info','sentiment_of_stock']:
-                    args_dict={'company':function_args.get('company')}
-                elif function_name in ['calculate_SMA','calculate_EMA']:
-                    args_dict={'company':function_args.get('company'),'window':function_args.get('window')}
+        second_response = openai.ChatCompletion.create(
+                model='gpt-3.5-turbo-16k',
+                messages=session_state['messages'],
+                max_tokens=2000,
                 
-                function_to_call=available_functions[function_name]
-                function_response=function_to_call(**args_dict)
-                # if function_name=='plot_stock_price':
-                #     return stock_price.png
-                # else:
-                response = {
-                    "data": {
-                    "messages": [
-                    {
-                        "data_type": "STRING",
-                        "value": function_response
-                    }
-                ],
-                "state": state
-            },
-            "errors": [
-                {
-                    "message": ""
-                }
-            ]
+            )
+        second_response = second_response['choices'][0]['message']
+        print(second_response)
+        second_response=second_response['content']
+        response = {
+            "data": {
+            "messages": [
+            {
+                "data_type": "STRING",
+                "value": second_response
+            }
+        ],
+        "state": state
+    },
+    "errors": [
+        {
+            "message": ""
         }
+    ]
+}
 
-        return {
-            "status_code": 200,
-            "response": response
+    return {
+        "status_code": 200,
+        "response": response
         }
