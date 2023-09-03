@@ -1,7 +1,6 @@
 import json
 import openai
 import matplotlib.pyplot as plt
-import streamlit as st
 import pandas as pd
 import yfinance as yf
 import requests
@@ -58,39 +57,7 @@ def calculate_RSI(company):
     rs=ema_up/ema_down
     rsi=100-(100/(1+rs))
     return str(rsi.iloc[-1])
-def plot_stock_price(company):
-    company=company+'.NS'
-    dfdata = yf.Ticker(company).history(period='1y')
-    plt.figure(figsize=(12, 6))
-    dfdata['Close'].plot(color='blue', linewidth=2)
-    plt.title(f"Stock Price for {company}")
-    plt.xlabel('Date')
-    plt.ylabel('Price (INR)')
-    plt.grid(True, alpha=0.3)
 
-    # Adding a legend
-    plt.legend([f'{company} Stock Price'])
-
-    # Adding a background color
-    plt.axhspan(0, dfdata['Close'].max(), facecolor='0.95')
-
-    # Adding annotations
-    max_price_date = dfdata['Close'].idxmax()
-    max_price = dfdata['Close'].max()
-    plt.annotate(f'Max Price: {max_price:.2f} INR\nDate: {max_price_date.date()}',
-                 xy=(max_price_date, max_price),
-                 xytext=(max_price_date - pd.DateOffset(months=2), max_price * 0.9),
-                 arrowprops=dict(facecolor='black', arrowstyle='wedge,tail_width=0.7'),
-                 fontsize=10,
-                 color='black')
-
-    plt.tight_layout()
-    # Save the plot as an image
-    image_path = 'stock_price.png'
-    plt.savefig(image_path)
-    plt.close()
-
-    return image_path
 def get_news_articles(stock_ticker):
     sources = [
         ("https://www.moneycontrol.com/news/business/stocks/", "moneycontrol"),
@@ -153,7 +120,144 @@ def get_stock_sentiment(stock_ticker):
         result = {"error": "Error fetching news articles."}
 
     return result
+functions=[
+    
+    {
+        'name':'get_stock_price',
+        'description':'Get the current stock price of a company',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to get the stock price of'
+                }
+            },
+            'required':['company']
+        }
+    },
+    {
+        'name':'stock_info',
+        'description':'Get the stock info of a company',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to get the stock info of'
+                }
+            },
+            'required':['company']
+        }
+    },
+    {
+        'name':'calculate_SMA',
+        'description':'Calculate the Simple Moving Average of a company',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to calculate the SMA of'
+                },
+                'window':{
+                    'type':'integer',
+                    'description':'The window to calculate the SMA over'
+                }
+            },
+            'required':['company','window']
+        }
+    },
+    {
+        'name':'calculate_EMA',
+        'description':'Calculate the Exponential Moving Average of a company',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to calculate the EMA of'
+                },
+                'window':{
+                    'type':'integer',
+                    'description':'The window to calculate the EMA over'
+                }
+            },
+            'required':['company','window']
+        }
+    },
+    {
+        'name':'calculate_MACD',
+        'description':'Calculate the Moving Average Convergence Divergence of a company',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to calculate the MACD of'
+                }
+            },
+            'required':['company']
+        }
+    },
+    {
+        'name':'calculate_RSI',
+        'description':'Calculate the Relative Strength Index of a company',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to calculate the RSI of'
+                },
+                
+            },
+            'required':['company']
+        }
+    },
+    {
+        'name':'plot_stock_price',
+        'description':'Plot the stock price of a company over the last year',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to plot the stock price of'
+                }
+            },
+            'required':['company']
+        }
+    },
+    {
+        'name':'sentiment_of_stock',
+        'description':'Get the sentiment of a stock',
+        'parameters':{
+            'type':'object',
+            'properties':{
+                'company':{
+                    'type':'string',
+                    'description':'The company to get the sentiment of'
+                }
+            },
+            'required':['company']
+        }
+    }
+    
 
+]
+
+available_functions = {
+    'get_stock_price':get_stock_price,
+    'stock_info':stock_info,
+    'calculate_SMA':calculate_SMA,
+    'calculate_EMA':calculate_EMA,
+    'calculate_MACD':calculate_MACD,
+    'calculate_RSI':calculate_RSI,
+    'plot_stock_price':plot_stock_price,
+    'sentiment_of_stock':sentiment_of_stock
+
+}
 @bot()
 def financial_advisor(message_history: List[Message], state: dict = None):
    
