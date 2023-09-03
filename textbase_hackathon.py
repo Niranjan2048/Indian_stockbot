@@ -154,6 +154,7 @@ def get_stock_sentiment(stock_ticker):
 
     return result
 
+@bot()
 def financial_advisor(message_history: List[Message], state: dict = None):
    
         if message_history[-1].get('content'):
